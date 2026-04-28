@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>QR Generator</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;1,9..144,300&display=swap" rel="stylesheet"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --ink: #1a1a18;
+      --paper: #f5f2eb;
+      --surface: #edeae0;
+      --accent: #3b6d11;
+      --accent-light: #eaf3de;
+      --accent-mid: #639922;
+      --muted: #888780;
+      --border: #c8c5b8;
+      --white: #ffffff;
+    }
+
+    body {
+      font-family: 'DM Mono', monospace;
+      background: var(--paper);
+      color: var(--ink);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 3rem 1.5rem 4rem;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 3rem;
+    }
+
+    header h1 {
+      font-family: 'Fraunces', serif;
+      font-size: clamp(2.4rem, 5vw, 3.6rem);
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+      color: var(--ink);
+    }
+
+    header h1 span {
+      font-style: italic;
+      color: var(--accent);
+    }
+
+    header p {
+      margin-top: 0.6rem;
+      font-size: 0.78rem;
+      color: var(--muted);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 2rem 2.2rem;
+      width: 100%;
+      max-width: 520px;
+      box-shadow: 0 2px 0 var(--border);
+    }
+
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      margin-bottom: 1.2rem;
+    }
+
+    label {
+      font-size: 0.72rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    input[type="url"], input[type="text"] {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.88rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--paper);
+      color: var(--ink);
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    input[type="url"]:focus, input[type="text"]:focus {
+      border-color: var(--accent-mid);
+    }
+
+    .options-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-bottom: 1.4rem;
+    }
+
+    .option-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    select {
+      padding: 0.55rem 0.8rem;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.82rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--paper);
+      color: var(--ink);
+      cursor: pointer;
+      outline: none;
+    }
+
+    select:focus { border-color: var(--accent-mid); }
+
+    .color-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    input[type="color"] {
+      width: 36px;
+      height: 36px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: none;
+      cursor: pointer;
+      padding: 2px;
+    }
+
+    .generate-btn {
+      width: 100%;
+      padding: 0.9rem;
+      background: var(--accent);
+      color: var(--white);
+      font-family: 'DM Mono', monospace;
+      font-size: 0.85rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.1s;
+    }
+
+    .generate-btn:hover { background: var(--accent-mid); }
+    .generate-btn:active { transform: scale(0.985); }
+
+    .qr-output {
+      margin-top: 2rem;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.5rem;
+    }
+
+    .qr-output.visible { display: flex; }
+
+    .qr-frame {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.5rem;
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+      box-shadow: 0 2px 0 var(--border);
+    }
+
+    #qrcode canvas, #qrcode img {
+      display: block;
+      border-radius: 4px;
+    }
+
+    .qr-url-label {
+      font-size: 0.72rem;
+      color: var(--muted);
+      letter-spacing: 0.04em;
+      text-align: center;
+      max-width: 260px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .actions {
+      display: flex;
+      gap: 0.8rem;
+    }
+
+    .action-btn {
+      padding: 0.6rem 1.4rem;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.76rem;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.12s;
+    }
+
+    .btn-primary {
+      background: var(--accent-light);
+      color: var(--accent);
+      border: 1px solid var(--accent-mid);
+    }
+
+    .btn-primary:hover { background: #c0dd97; }
+
+    .btn-secondary {
+      background: var(--surface);
+      color: var(--ink);
+      border: 1px solid var(--border);
+    }
+
+    .btn-secondary:hover { background: var(--border); }
+
+    .error-msg {
+      display: none;
+      font-size: 0.78rem;
+      color: #a32d2d;
+      background: #fcebeb;
+      border: 1px solid #f7c1c1;
+      border-radius: 6px;
+      padding: 0.5rem 0.8rem;
+      margin-top: 0.4rem;
+    }
+
+    footer {
+      margin-top: 3.5rem;
+      font-size: 0.7rem;
+      color: var(--muted);
+      letter-spacing: 0.05em;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>QR <span>Generator</span></h1>
+  <p>Paste a link. Get a code.</p>
+</header>
+
+<div class="card">
+  <div class="input-group">
+    <label for="urlInput">URL or text</label>
+    <input type="text" id="urlInput" placeholder="https://example.com" autocomplete="off" />
+    <div class="error-msg" id="errorMsg">Please enter a valid URL or some text.</div>
+  </div>
+
+  <div class="options-row">
+    <div class="option-group">
+      <label for="sizeSelect">Size</label>
+      <select id="sizeSelect">
+        <option value="128">Small — 128px</option>
+        <option value="200" selected>Medium — 200px</option>
+        <option value="300">Large — 300px</option>
+        <option value="400">XL — 400px</option>
+      </select>
+    </div>
+    <div class="option-group">
+      <label for="errorSelect">Error correction</label>
+      <select id="errorSelect">
+        <option value="L">Low (L)</option>
+        <option value="M" selected>Medium (M)</option>
+        <option value="Q">Quartile (Q)</option>
+        <option value="H">High (H)</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="options-row">
+    <div class="option-group">
+      <label>Dark color</label>
+      <div class="color-row">
+        <input type="color" id="darkColor" value="#1a1a18" />
+        <span style="font-size:0.78rem; color:var(--muted)" id="darkColorHex">#1a1a18</span>
+      </div>
+    </div>
+    <div class="option-group">
+      <label>Light color</label>
+      <div class="color-row">
+        <input type="color" id="lightColor" value="#ffffff" />
+        <span style="font-size:0.78rem; color:var(--muted)" id="lightColorHex">#ffffff</span>
+      </div>
+    </div>
+  </div>
+
+  <button class="generate-btn" onclick="generateQR()">Generate QR Code</button>
+</div>
+
+<div class="qr-output" id="qrOutput">
+  <div class="qr-frame">
+    <div id="qrcode"></div>
+    <div class="qr-url-label" id="qrLabel"></div>
+  </div>
+  <div class="actions">
+    <button class="action-btn btn-primary" onclick="downloadQR()">Download PNG</button>
+    <button class="action-btn btn-secondary" onclick="clearQR()">Clear</button>
+  </div>
+</div>
+
+<footer>Built with QRCode.js &mdash; no data leaves your browser</footer>
+
+<script>
+  const darkInput = document.getElementById('darkColor');
+  const lightInput = document.getElementById('lightColor');
+
+  darkInput.addEventListener('input', () => {
+    document.getElementById('darkColorHex').textContent = darkInput.value;
+  });
+  lightInput.addEventListener('input', () => {
+    document.getElementById('lightColorHex').textContent = lightInput.value;
+  });
+
+  function generateQR() {
+    const url = document.getElementById('urlInput').value.trim();
+    const errorMsg = document.getElementById('errorMsg');
+
+    if (!url) {
+      errorMsg.style.display = 'block';
+      return;
+    }
+    errorMsg.style.display = 'none';
+
+    const size = parseInt(document.getElementById('sizeSelect').value);
+    const errorLevel = document.getElementById('errorSelect').value;
+    const dark = darkInput.value;
+    const light = lightInput.value;
+
+    const container = document.getElementById('qrcode');
+    container.innerHTML = '';
+
+    new QRCode(container, {
+      text: url,
+      width: size,
+      height: size,
+      colorDark: dark,
+      colorLight: light,
+      correctLevel: QRCode.CorrectLevel[errorLevel]
+    });
+
+    document.getElementById('qrLabel').textContent = url;
+    const output = document.getElementById('qrOutput');
+    output.classList.add('visible');
+    output.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  function downloadQR() {
+    const canvas = document.querySelector('#qrcode canvas');
+    if (!canvas) {
+      const img = document.querySelector('#qrcode img');
+      if (!img) return;
+      const a = document.createElement('a');
+      a.href = img.src;
+      a.download = 'qrcode.png';
+      a.click();
+      return;
+    }
+    const a = document.createElement('a');
+    a.download = 'qrcode.png';
+    a.href = canvas.toDataURL('image/png');
+    a.click();
+  }
+
+  function clearQR() {
+    document.getElementById('urlInput').value = '';
+    document.getElementById('qrcode').innerHTML = '';
+    document.getElementById('qrOutput').classList.remove('visible');
+  }
+
+  document.getElementById('urlInput').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') generateQR();
+  });
+</script>
+</body>
+</html>
